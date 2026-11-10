@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: spring-data-jpa
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/practices-ecommerce
+    username: postgres
+    password: YourNewPassword123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true

@@ -20,114 +20,121 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
-public class ProductServiceImpl implements ProductService{
+public class ProductServiceImpl implements ProductService {
     // inject dependency
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
     @Override
-    public void deleteProductByCode(String code) {
-        Product product = productRepository.findById(code)
+    public ProductResponse getProductByCode(String code) {
+
+        return productRepository.findById(code)
+                .map(productMapper::productToProductResponse)
                 .orElseThrow(
                         () -> new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
                                 "Product code not found"
                         )
                 );
-        productRepository.delete(product);
     }
 
     @Override
-    public ProductResponse patchByCode(PatchProductRequest patchProductRequest, String code) {
-        Product product = productRepository.findById(code)
+    public Page<ProductResponse> getAllProducts(int pageNumber, int pageSize) {
+        if (pageSize <= 0) {
+            pageSize = 10;
+        }
+        if (pageNumber < 0) {
+            pageNumber = 0;
+        }
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        return productRepository.findAll(pageable)
+                .map(productMapper::productToProductResponse);
+    }
+
+    @Override
+    public ProductResponse createNewProduct(CreateProductRequest createProductRequest) {
+        // TODO:
+        // 1. Validate categoryId (exists or not)
+        Category category = categoryRepository.findById(createProductRequest.categoryId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Product Code not found"
+                        "CategoryId not found"
                 ));
-
-        // 1. validate categoryId (id exists or not)
-
-       if (patchProductRequest.categoryId() != null){
-           Category category = categoryRepository
-                   .findById(patchProductRequest.categoryId())
-                   .orElseThrow(
-                           () -> new ResponseStatusException(
-                                   HttpStatus.NOT_FOUND,
-                                   "categoryId not found"
-                           )
-                   );
-           product.setCategory(category);
-       }
-
-        productMapper.patchProductResponseToProduct(patchProductRequest, product);
-        product = productRepository.save(product);
-        return productMapper.productToProductResponse(product);
-
-    }
-
-    @Override
-    public ProductResponse updateByCode(UpdateProductRequest updateProductRequest, String code) {
-        // TODO:
-        Product product = productRepository.findById(code)
-                .orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Product Code Not Found"
-                        )
-                );
-        productMapper.updateProductResponseToProduct(updateProductRequest, product);
-
-        product = productRepository.save(product);
-
-        return productMapper.productToProductResponse(product);
-    }
-
-    @Override
-    public ProductResponse createNew(CreateProductRequest createProductRequest) {
-        // TODO: write business logic
-        // 1. validate categoryId (id exists or not)
-        Category category = categoryRepository
-                .findById(createProductRequest.categoryId())
-                .orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "categoryId not found"
-                        )
-                );
-        // 2. Transfer data from DTO to Entity
+        // 2. transfer data from DTO to Entity
         Product product = new Product();
         product.setName(createProductRequest.name());
         product.setPrice(createProductRequest.price());
         product.setQty(createProductRequest.qty());
         product.setDescription(createProductRequest.description());
         product.setCategory(category);
-        // 3. system data
+        // 3. System data
         product.setCode(GeneratedUtil.generateRandomCode());
         product.setIsAvailable(Boolean.TRUE);
         // 4. Save into database
         product = productRepository.save(product);
-        // 5. Tranfer data from Entity to DTO
+        // 5. Transfer data from Entity to DTO
         return productMapper.productToProductResponse(product);
     }
 
     @Override
-    public ProductResponse getProductByCode(String code) {
-        return productRepository.findById(code) // need to map cus it's proResponse not proEntity
-                .map(productMapper::productToProductResponse)
-                .orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Product Code Not Found"
-                        )
+    public void deleteProductByCode(String code) {
+        Product product = productRepository.findById(code)
+                .orElseThrow(() ->
+                    new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Product code not found"
+                    )
                 );
+        productRepository.delete(product);
     }
 
     @Override
-    public Page<ProductResponse> getProducts(int pageNumber, int pageSize) {
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+    public ProductResponse updateProductByCode(UpdateProductRequest updateProductRequest, String code) {
+        // TODO:
+        //  1. check code(exists or not) 2. convert updateResToProductEntity 3. save into(convert Entity to response)
+        Product product = productRepository.findById(code)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Product code not found"
+                        )
+                );
 
-        return productRepository.findAll(pageable)
-                .map(productMapper::productToProductResponse);
+        productMapper.updateProductResponseToProduct(updateProductRequest, product);
+
+        product = productRepository.save(product);
+        return productMapper.productToProductResponse(product);
+//        return productMapper.productToProductResponse(productRepository.save(product));
+    }
+
+    @Override
+    public ProductResponse patchByCode(PatchProductRequest patchProductRequest, String code) {
+        Product product = productRepository.findById(code)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Product code not found"
+                        )
+                );
+        // 1. validate categoryId (id exists or not)
+
+        if (patchProductRequest.categoryId() != null){
+            Category category = categoryRepository
+                    .findById(patchProductRequest.categoryId())
+                    .orElseThrow(
+                            () -> new ResponseStatusException(
+                                    HttpStatus.NOT_FOUND,
+                                    "categoryId not found"
+                            )
+                    );
+            product.setCategory(category);
+        }
+
+        productMapper.patchProductResponseToProduct(patchProductRequest, product);
+        product = productRepository.save(product);
+        return productMapper.productToProductResponse(product);
+
     }
 }

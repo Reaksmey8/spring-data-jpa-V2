@@ -26,27 +26,26 @@ public class ProductController {
 
     @GetMapping
     public Page<ProductResponse> getProducts(
-            @RequestParam(required = false, defaultValue = "dara") int pageNumber,
-            @RequestParam(required = false, defaultValue = "0") int pageSize
+            @RequestParam(required = false, defaultValue = "0") int pageNumber,
+            @RequestParam(required = false, defaultValue = "10") int pageSize
             ){
-        return productService.getProducts(pageNumber, pageSize);
+        return productService.getAllProducts(pageNumber, pageSize);
     }
 
     @GetMapping("/{code}")
-    public ProductResponse getProductByCode(
-            @PathVariable String code
-    ){
+    public ProductResponse getProductByCode(@PathVariable String code){
+
         log.info("getProductByCode: {} ", code);
         return productService.getProductByCode(code);
     }
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    public ProductResponse createNew(
+    public ProductResponse createNewProduct(
            @Valid @RequestBody CreateProductRequest createProductRequest){
         log.info("createProductRequest: {}" , createProductRequest);
 
-        return productService.createNew(createProductRequest);
+        return productService.createNewProduct(createProductRequest);
     }
 
     @PutMapping("{code}")
@@ -56,7 +55,7 @@ public class ProductController {
     {
         log.info("UpdateProductRequest: {} and code: {}", updateProductRequest, code);
 
-        return productService.updateByCode(updateProductRequest, code);
+        return productService.updateProductByCode(updateProductRequest, code);
     }
 
     @PatchMapping("{code}")
@@ -68,7 +67,7 @@ public class ProductController {
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @DeleteMapping("{code}")
+    @DeleteMapping("/{code}")
     public void deleteByCode(
             @PathVariable String code
     ){
